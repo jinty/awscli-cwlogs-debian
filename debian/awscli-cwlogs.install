@@ -1,0 +1,2 @@
+debian/awscli-cwlogs.conf etc/awscli-cwlogs
+debian/awscli-cwlogs-launcher usr/bin

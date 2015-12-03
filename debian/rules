@@ -1,0 +1,7 @@
+#!/usr/bin/make -f
+
+export PYBUILD_NAME=awscli-cwlogs
+export PYBUILD_DISABLE=test
+
+%:
+	dh $@  --with python3,systemd --buildsystem=pybuild

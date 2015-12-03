@@ -1,0 +1,15 @@
+[Unit]
+Description=AWS Logfile uploader
+
+[Service]
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+NoNewPrivileges=true
+PrivateDevices=true
+ExecStart=/usr/bin/awscli-cwlogs-launcher
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+

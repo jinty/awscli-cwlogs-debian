@@ -1,0 +1,5 @@
+#!/bin/bash
+set -e
+
+# we really don't want output ending up in syslog!
+/usr/bin/nice -n 4 /usr/bin/aws logs push --config-file /etc/awscli-cwlogs/awscli-cwlogs.conf >> /var/log/awscli-cwlogs.log 2>&1
