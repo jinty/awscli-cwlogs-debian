@@ -7,7 +7,7 @@ Standards-Version: 3.9.2
 
 Package: python3-awscli-cwlogs
 Architecture: all
-Depends: ${python3:Depends}, ${misc:Depends}
+Depends: ${python3:Depends}, python3-pyasn1, ${misc:Depends}
 Description: AWSCLI CloudWatch Logs plugin
  AWSCLI CloudWatch Logs plugin
 

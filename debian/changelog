@@ -1,3 +1,9 @@
+awscli-cwlogs (1.3.2-2) UNRELEASED; urgency=medium
+
+  * depend on python3-pyasn1 a missing dependency of the awscli package
+
+ -- Brian Sutherland <brian@vanguardistas.net>  Fri, 04 Dec 2015 14:10:09 +0000
+
 awscli-cwlogs (1.3.2-1) unstable; urgency=medium
 
   * Initial release 
