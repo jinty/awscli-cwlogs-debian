@@ -1,5 +1,6 @@
 [Unit]
 Description=AWS Logfile uploader
+After=cloud-final
 
 [Service]
 PrivateTmp=true
