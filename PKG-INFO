@@ -1,6 +1,6 @@
 Metadata-Version: 1.1
 Name: awscli-cwlogs
-Version: 1.3.2
+Version: 1.3.3
 Summary: AWSCLI CloudWatch Logs plugin
 Home-page: http://aws.amazon.com/cli/
 Author: Amazon

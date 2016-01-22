@@ -266,7 +266,7 @@ class EventsRenderer(BaseThread):
                 print_stderr("Searching for more data...")
             except Queue.Empty:
                 if self.stop_flag.is_set():
-                    print_stderr('{} log streams searched in log group {}:'.format(len(total_searched_streams), event_batch.log_group_name))
+                    print_stderr('{0} log streams searched in log group {1}:'.format(len(total_searched_streams), event_batch.log_group_name))
                     print_stderr(', '.join(sorted(total_searched_streams)))
                     logger.debug('Renderer is leaving...')
                     break

@@ -3,7 +3,7 @@ import sys
 from setuptools import setup, find_packages, Command
 import cwlogs
 
-requires = ['awscli==1.7.27',
+requires = ['awscli==1.9.8',
             'six>=1.1.0',
             'python-dateutil>=2.1']
 

@@ -1,6 +1,12 @@
 =========
 CHANGELOG
 =========
+1.3.3
+===
+* Support for Gzip http content encoding
+* Support for dropin additional config files using --additional-configs-dir
+* Upgrading to awscli 1.9.8
+
 1.3.2
 ===
 * Reuse same DB connection between threads

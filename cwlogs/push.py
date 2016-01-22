@@ -14,6 +14,7 @@
 from datetime import datetime, timedelta
 import encodings
 import glob
+import gzip
 import hashlib
 import io
 import logging
@@ -28,6 +29,7 @@ from six.moves import configparser
 import socket
 from sys import stdin, exc_info
 from threading import Event
+from io import BytesIO
 
 from botocore.vendored import requests
 from botocore.exceptions import ClientError
@@ -49,7 +51,6 @@ batch_logger = logging.getLogger(__name__ + '.batch')
 stream_logger = logging.getLogger(__name__ + '.stream')
 watcher_logger = logging.getLogger(__name__ + '.watcher')
 
-
 def initialize(cli):
     """
     The entry point for CloudWatch Logs push command.
@@ -66,7 +67,36 @@ def inject_commands(command_table, session, **kwargs):
     """
     command_table['push'] = LogsPushCommand(session)
 
-
+##
+# A callback that comes on before-sign.logs.PutLogEvents. The intention is to compress the payload
+# before going forward to reduce the cost spent in signing and transferring the payload.
+##
+def compress_request_payload(**kwargs):
+    for name, value in kwargs.items():
+        # Check for request entry
+        if name == 'request':
+            # Request has "data" that forms the body of the payload.
+            # Compress it if the payload length is more than 1024 bytes.
+            payload = value.__dict__['data']
+            payload_length = len(payload)
+            if payload_length > 1024:
+                new_payload = compress_string(payload)
+                new_payload_length = str(len(new_payload))
+                value.__dict__['data'] = new_payload
+                value.__dict__['headers']['Content-Encoding'] = "gzip"
+                value.__dict__['headers']['Content-Length'] = new_payload_length
+            break
+ 
+##
+# A utility method that gzips a given string
+##
+def compress_string(string):
+    zbuf = BytesIO()
+    zfile = gzip.GzipFile(mode = 'wb',  fileobj = zbuf)
+    zfile.write(string)
+    zfile.close()
+    return zbuf.getvalue()
+ 
 class LogsPushCommand(BasicCommand):
     """
     """
@@ -97,6 +127,13 @@ class LogsPushCommand(BasicCommand):
          'help_text': 'Specifies where and how to read the source files and '
                       'where to push the log events. If this is specified, '
                       'other arguments will be ignored except ``--dry-run``.'},
+        {'name': 'additional-configs-dir',
+         'help_text': 'Specifies a directory where supplemental configurations can '
+                      'be added. When files exist in this directory, they will be '
+                      'used in addition to the streams in the main config file, `config-file`. '
+                      'Only additional stream configurations will be used from the additional '
+                      'files in the directory. This parameter s ignored if no main '
+                      'configuration file is provided using `config-file` as well.'},
         {'name': 'log-group-name',
          'help_text': 'Specifies the destination log group.'},
         {'name': 'log-stream-name',
@@ -132,6 +169,11 @@ class LogsPushCommand(BasicCommand):
         {'name': 'logging-config-file',
          'help_text': 'Configures how this command outputs its own log. '
                       'Supports Python logging config file format.'},
+        {'name': 'no-gzip-http-content-encoding',
+         'action': 'store_false',
+         'dest': 'use_http_compression',
+         'help_text': 'When set, explicitly disables gzip http content encoding on sent data, '
+                      'which is enabled by default'},
     ]
 
     UPDATE = False
@@ -139,6 +181,15 @@ class LogsPushCommand(BasicCommand):
     QUEUE_SIZE = 10000
 
     def _run_main(self, args, parsed_globals):
+        # enable basic logging initially. This will be overriden if a python logging config
+        # file is provided in the agent config.
+        logging.basicConfig(
+            level=logging.INFO,
+            format=('%(asctime)s - %(name)s - %(levelname)s - '
+                    '%(process)d - %(threadName)s - %(message)s'))
+        for handler in logging.root.handlers:
+            handler.addFilter(logging.Filter('cwlogs'))
+
         # Parse a dummy string to bypass a bug before using strptime in thread
         # https://bugs.launchpad.net/openobject-server/+bug/947231
         datetime.strptime('2012-01-01', '%Y-%m-%d')
@@ -169,6 +220,12 @@ class LogsPushCommand(BasicCommand):
 
         return 0
 
+    def _register_compression_handler(self):
+        # Register handler for request compression.
+        self.logs.meta.events.register('before-sign.{0}.{1}'
+            .format('logs', 'PutLogEvents'), compress_request_payload, unique_id='compress_request_payload')
+ 
+
     def _validate_arguments(self, options):
         if options.config_file or (options.log_group_name and
                                    options.log_stream_name):
@@ -176,15 +233,56 @@ class LogsPushCommand(BasicCommand):
         raise ValueError('You need to provide either --config-file '
                          'or both --log-group-name and --log-stream-name.')
 
+    def _get_config(self, config_file, configs_dir):
+        validate_file_readable(config_file)
+        config = configparser.RawConfigParser(StreamConfig.DEFAULT_DICT)
+        config.read(config_file)
+        if not configs_dir:
+            return config
+
+        if os.path.isdir(configs_dir):
+            files = os.listdir(configs_dir)
+            for file_name in files:
+                file_name = os.path.join(configs_dir, file_name)
+                if os.path.isfile(file_name):
+                    validate_file_readable(file_name)
+                    logger.info("Loading additional configs from " + file_name)
+                    subconfig = configparser.RawConfigParser(StreamConfig.DEFAULT_DICT)
+
+                    try:
+                        subconfig.read(file_name)
+                    except Exception as e:
+                        logger.warning("Failed to parse additional config file " + file_name + ": " + str(e))
+                        continue
+
+                    for section in subconfig.sections():
+                        if config.has_section(section) or section == StreamConfig.GENERAL_SECTION:
+                            continue
+                        for option in subconfig.options(section):
+                            if not config.has_section(section):
+                                config.add_section(section)
+
+                            config.set(section, option, subconfig.get(section, option))
+
+        return config
+
     def _call_push_file(self, options, parsed_globals):
         stop_flag = Event()
-        validate_file_readable(options.config_file)
-        config = configparser.RawConfigParser(StreamConfig.DEFAULT_DICT)
-        config.read(options.config_file)
+        config = self._get_config(options.config_file, options.additional_configs_dir)
         state_file = config.get(StreamConfig.GENERAL_SECTION,
                                 StreamConfig.STATE_FILE)
         logging_config_file = config.get(StreamConfig.GENERAL_SECTION,
                                          StreamConfig.LOGGING_CONFIG_FILE)
+        try:
+            use_http_compression = config.getboolean(StreamConfig.GENERAL_SECTION, StreamConfig.USE_HTTP_COMPRESSION)
+            if use_http_compression == None:
+                use_http_compression = True
+        except (configparser.NoOptionError, ValueError):
+            logger.info("Missing or invalid value for use_gzip_http_content_encoding config. Defaulting to using gzip encoding.")
+            use_http_compression = True
+        if use_http_compression:
+            self._register_compression_handler()
+
         self._config_logging(logging_config_file)
         watcher = Watcher(stop_flag, self.logs, state_file, options.dry_run)
         for section in config.sections():
@@ -220,6 +318,10 @@ class LogsPushCommand(BasicCommand):
         else:
             encoding = StreamConfig.DEFAULT_ENCODING
 
+        use_http_compression = options.use_http_compression
+        if use_http_compression:
+            self._register_compression_handler()
+
         threads = []
         queue = Queue.Queue(self.QUEUE_SIZE)
         stop_flag = Event()
@@ -253,15 +355,10 @@ class LogsPushCommand(BasicCommand):
         exit_checker.join()
 
     def _config_logging(self, logging_config_file):
-        logging.basicConfig(
-            level=logging.INFO,
-            format=('%(asctime)s - %(name)s - %(levelname)s - '
-                    '%(process)d - %(threadName)s - %(message)s'))
-        for handler in logging.root.handlers:
-            handler.addFilter(logging.Filter('cwlogs'))
         if logging_config_file:
             try:
                 logging.config.fileConfig(logging_config_file)
+                logger.debug("Loaded logging configurations from file " + logging_config_file)
                 return
             except Exception as e:
                 logger.warning('Detected wrong logging config: ' + str(e))
@@ -277,6 +374,7 @@ class StreamConfig(object):
     LOG_GROUP_NAME = 'log_group_name'
     LOG_STREAM_NAME = 'log_stream_name'
     DATETIME_FORMAT = 'datetime_format'
+    USE_HTTP_COMPRESSION = 'use_gzip_http_content_encoding'
     TIME_ZONE = 'time_zone'
     TIME_ZONE_UTC = 'UTC'
     TIME_ZONE_LOCAL = 'LOCAL'
@@ -478,11 +576,8 @@ class StreamConfig(object):
             response = requests.get(self.INSTANCE_ID_URL, timeout=5)
             if response.status_code == 200:
                 return response.text
-            else:
-                return None
-        except Exception as e:
+        except Exception:
             return None
-
 
 class Watcher(BaseThread):
     """
