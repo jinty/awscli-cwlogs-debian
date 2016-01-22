@@ -1,1 +1,2 @@
 /var/lib/awscli-cwlogs
+/etc/awscli-cwlogs/conf.d

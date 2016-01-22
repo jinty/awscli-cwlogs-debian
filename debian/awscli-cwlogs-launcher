@@ -2,4 +2,4 @@
 set -e
 
 # we really don't want output ending up in syslog!
-/usr/bin/nice -n 4 /usr/bin/aws logs push --config-file /etc/awscli-cwlogs/awscli-cwlogs.conf >> /var/log/awscli-cwlogs.log 2>&1
+/usr/bin/nice -n 4 /usr/bin/aws logs push --config-file /etc/awscli-cwlogs/awscli-cwlogs.conf --additional-configs-dir /etc/awscli-cwlogs/conf.d >> /var/log/awscli-cwlogs.log 2>&1
