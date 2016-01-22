@@ -23,11 +23,11 @@ Forwarded: <no|not-needed|url proving that it has been forwarded>
 Reviewed-By: <name and email of someone who approved the patch>
 Last-Update: <YYYY-MM-DD>
 
---- awscli-cwlogs-1.3.2.orig/cwlogs/push.py
-+++ awscli-cwlogs-1.3.2/cwlogs/push.py
-@@ -29,7 +29,7 @@ import socket
- from sys import stdin, exc_info
+--- a/cwlogs/push.py
++++ b/cwlogs/push.py
+@@ -31,7 +31,7 @@
  from threading import Event
+ from io import BytesIO
  
 -from botocore.vendored import requests
 +import requests

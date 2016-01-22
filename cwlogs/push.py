@@ -31,7 +31,7 @@ from sys import stdin, exc_info
 from threading import Event
 from io import BytesIO
 
-from botocore.vendored import requests
+import requests
 from botocore.exceptions import ClientError
 from awscli.customizations.commands import BasicCommand
 import cwlogs
