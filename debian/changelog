@@ -1,3 +1,9 @@
+awscli-cwlogs (1.3.3-2) stretch; urgency=medium
+
+  * Don't depend on cloud-final.service to break systemd dependency cycle.
+
+ -- Brian Sutherland <brian@vanguardistas.net>  Tue, 14 Feb 2017 10:10:18 +0000
+
 awscli-cwlogs (1.3.3-1) jessie; urgency=medium
 
   * Use better default config.
