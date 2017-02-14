@@ -3,7 +3,6 @@ LICENSE.txt
 MANIFEST.in
 README.rst
 requirements.txt
-setup.cfg
 setup.py
 awscli_cwlogs.egg-info/PKG-INFO
 awscli_cwlogs.egg-info/SOURCES.txt

@@ -2,7 +2,7 @@
 awscli-cwlogs
 =============
 
-This awscli plugin provides the ``pull`` and ``push`` commands to access AWS CloudWatch Logs service.
+This awscli plugin provides the ``pull``, ``push`` and ``filter`` commands to access AWS CloudWatch Logs service.
 
 
 The awscli-cwlogs package works on Python versions:
@@ -39,7 +39,7 @@ This will install the awscli-cwlogs package as well as all dependencies, includi
 Getting Started
 ---------------
 
-Before using awscli-cwlogs plugin, you need to `configure awscli <http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html>`__ first. As of 7/17/2014, CloudWatch Logs service is only available in ``us-east-1`` so you cannot use these commands for other regions.
+Before using awscli-cwlogs plugin, you need to `configure awscli <http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html>`__ first.
 
 Once that's done, to enable awscli-cwlogs, you can run::
 
@@ -54,7 +54,7 @@ To verify if awscli-cwlogs plugin is installed and configured properly, you can 
 
     $ aws logs help
 
-You will see the ``pull`` and ``push`` commands from available commands, otherwise it means the cwlogs plugin is not registered properly.
+You will see the ``pull``, ``push`` and ``fitler`` commands from available commands, otherwise it means the cwlogs plugin is not registered properly.
 
 If you see ``ImportError: No module named cwlogs`` error, it means the cwlogs plugin is registered in config file, but the plugin is not installed.
 
@@ -65,7 +65,7 @@ Examples
  Push command
 .............
 You can use ``aws logs push help`` to check supported options.
-The ``push`` command is used by CloudWatch Logs agent, check the `CloudWatch Logs Agent Reference <https://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/AgentReference.html>`__ if you want to keep the ``push`` command running.
+The ``push`` command is used by CloudWatch Logs agent, check the `CloudWatch Logs Agent Reference <https://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/AgentReference.html>`__ to see all supported options or if you want to keep the ``push`` command running.
 
 1) Uploading a single log event to CloudWatch Logs service. The log group and log stream get created automatically if they don't exist.
 
@@ -141,5 +141,9 @@ You can use ``aws logs pull help`` to check supported options.
 
     aws logs pull --log-group-name website1/access_log --log-stream-name webhost-001 --start-time 2014-01-23T00:00:00Z --output-format "{message}"
 
+...............
+ Filter command
+...............
+See `this AWS developer guide <http://docs.aws.amazon.com/AmazonCloudWatch/latest/DeveloperGuide/SearchDataFilterPattern.html>`__.
 
 .. _pip: ht`tp://www.pip-installer.org/en/latest/

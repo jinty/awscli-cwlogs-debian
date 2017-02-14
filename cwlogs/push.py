@@ -1,15 +1,15 @@
-# Copyright 2014 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+#  Copyright 2016 Amazon.com, Inc. or its affiliates. All Rights Reserved.
 #
-# Licensed under the Apache License, Version 2.0 (the "License"). You
-# may not use this file except in compliance with the License. A copy of
-# the License is located at
+#  Licensed under the Amazon Software License (the "License").
+#  You may not use this file except in compliance with the License.
+#  A copy of the License is located at
 #
-#     http://aws.amazon.com/apache2.0/
+#  http://aws.amazon.com/asl/
 #
-# or in the "license" file accompanying this file. This file is
-# distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF
-# ANY KIND, either express or implied. See the License for the specific
-# language governing permissions and limitations under the License.
+#  or in the "license" file accompanying this file. This file is distributed
+#  on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+#  express or implied. See the License for the specific language governing
+#  permissions and limitations under the License.
 
 from datetime import datetime, timedelta
 import encodings
@@ -31,7 +31,7 @@ from sys import stdin, exc_info
 from threading import Event
 from io import BytesIO
 
-import requests
+from botocore.vendored import requests
 from botocore.exceptions import ClientError
 from awscli.customizations.commands import BasicCommand
 import cwlogs
@@ -86,7 +86,7 @@ def compress_request_payload(**kwargs):
                 value.__dict__['headers']['Content-Encoding'] = "gzip"
                 value.__dict__['headers']['Content-Length'] = new_payload_length
             break
- 
+
 ##
 # A utility method that gzips a given string
 ##
@@ -96,7 +96,7 @@ def compress_string(string):
     zfile.write(string)
     zfile.close()
     return zbuf.getvalue()
- 
+
 class LogsPushCommand(BasicCommand):
     """
     """
@@ -224,7 +224,7 @@ class LogsPushCommand(BasicCommand):
         # Register handler for request compression.
         self.logs.meta.events.register('before-sign.{0}.{1}'
             .format('logs', 'PutLogEvents'), compress_request_payload, unique_id='compress_request_payload')
- 
+
 
     def _validate_arguments(self, options):
         if options.config_file or (options.log_group_name and

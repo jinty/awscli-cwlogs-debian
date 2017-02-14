@@ -1,6 +1,11 @@
 =========
 CHANGELOG
 =========
+
+1.4.0
+===
+* Release this package to pypi under Amazon Software License.
+
 1.3.3
 ===
 * Support for Gzip http content encoding
